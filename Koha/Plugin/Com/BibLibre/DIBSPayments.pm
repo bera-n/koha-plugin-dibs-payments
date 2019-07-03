@@ -154,7 +154,7 @@ sub opac_online_payment_begin {
         merchant     => $self->retrieve_data('DIBSMerchantID'),
         orderid      => $transaction_id,
         #FIXME
-        ? => $borrowernumber,
+        #? => $borrowernumber,
         
         # Optional fields
         lang               => C4::Languages::getlanguage(),
