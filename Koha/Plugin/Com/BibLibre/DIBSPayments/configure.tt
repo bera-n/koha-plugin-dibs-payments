@@ -41,6 +41,15 @@
 
         <p>
 
+        <label for="">MD5 k1: </label>
+        <input type="text" name="MD5k1" value="[% MD5k1 %]" />
+
+        <p>
+
+        <label for="">MD5 k2: </label>
+        <input type="text" name="MD5k2" value="[% MD5k2 %]" />
+
+
         <input type="hidden" name="save" value="1" />
 
         <input type="submit" value="Save configuration" />

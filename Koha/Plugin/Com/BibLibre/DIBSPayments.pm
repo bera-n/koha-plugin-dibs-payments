@@ -87,6 +87,9 @@ sub opac_online_payment_begin {
 
     }
 
+    # FIXME
+    $sum = $sum * 100;
+
     # Create a transaction
     my $dbh   = C4::Context->dbh;
     my $table = $self->get_qualified_table_name('dibs_transactions');
@@ -111,14 +114,18 @@ sub opac_online_payment_begin {
           . "/cgi-bin/koha/opac-account.pl?payment_method=Koha::Plugin::Com::BibLibre::DIBSPayments" );
 
 
+    # MD5
+    my $md51 = md5_hex($self->retrieve_data('MD5k1') . 'merchant=' . $self->retrieve_data('DIBSMerchantID') . "&orderid=$transaction_id&currency=EUR&amount=$sum");
+    my $md5checksum = md5_hex($self->retrieve_data('MD5k2') . $md51);
+
+
 	$template->param(
 
         DIBSURL => 'https://payment.architrade.com/paymentweb/start.action',
 
         # Required fields
         accepturl    => $accepturl,
-        #FIXME
-        amount       => $sum * 100,
+        amount       => $sum,
         callbackurl  => $callback_url,
         #FIXME
         currency     => 'EUR',
@@ -133,7 +140,8 @@ sub opac_online_payment_begin {
         billingAddress2    => $borrower_result->address2,
         billingPostalCode  => $borrower_result->zipcode,
         billingPostalPlace => $borrower_result->city,
-        email              => $borrower_result->email
+        email              => $borrower_result->email,
+        md5key             => $md5checksum
     );
 
     print $cgi->header();
@@ -215,9 +223,10 @@ sub configure {
 
         ## Grab the values we already have for our settings, if any exist
         $template->param(
-            enable_opac_payments =>
-              $self->retrieve_data('enable_opac_payments'),
-            DIBSMerchantID     => $self->retrieve_data('DIBSMerchantID')
+            enable_opac_payments => $self->retrieve_data('enable_opac_payments'),
+            DIBSMerchantID       => $self->retrieve_data('DIBSMerchantID'),
+            MD5k1                => $self->retrieve_data('MD5k1'),
+            MD5k2                => $self->retrieve_data('MD5k2')
         );
 
         print $cgi->header();
@@ -227,7 +236,9 @@ sub configure {
         $self->store_data(
             {
                 enable_opac_payments => $cgi->param('enable_opac_payments'),
-                DIBSMerchantID          => $cgi->param('DIBSMerchantID'),
+                DIBSMerchantID       => $cgi->param('DIBSMerchantID'),
+                MD5k1                => $cgi->param('MD5k1'),
+                MD5k2                => $cgi->param('MD5k2'),
                 last_configured_by   => C4::Context->userenv->{'number'},
             }
         );
