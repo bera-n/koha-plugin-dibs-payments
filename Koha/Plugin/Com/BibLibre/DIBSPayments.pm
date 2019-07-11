@@ -10,7 +10,6 @@ use Koha::Account;
 use Koha::Account::Lines;
 use Koha::Patrons;
 
-use XML::LibXML;
 use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
 
@@ -70,10 +69,6 @@ sub opac_online_payment_begin {
     # Get the borrower
     my $borrower_result = Koha::Patrons->find($borrowernumber);
 
-    # Construct XML POST
-    my $xml = XML::LibXML::Document->new( '1.0', 'utf-8' );
-    my $root = $xml->createElement('orderinformation');
-
     # Add the accountlines to pay off
     my @accountline_ids = $cgi->multi_param('accountline');
     my $accountlines    = $schema->resultset('Accountline')
@@ -90,29 +85,7 @@ sub opac_online_payment_begin {
         my $amount = sprintf "%.2f", $accountline->amountoutstanding;
         $sum = $sum + $amount;
 
-        # Build payment block
-        my $payment = $xml->createElement("orderitem");
-        $payment->setAttribute( 'itemid' => $accountline->accountlines_id );
-        # FIXME: use price according to the currency
-        $payment->setAttribute( 'price' => $amount );
-        if ( defined( $accountline->description )
-            && $accountline->description ne '' )
-        {
-            my $data_description = $accountline->description;
-            my $data =
-              XML::LibXML::CDATASection->new( encode_entities($data_description) );
-            $payment->setAttribute('itemdescription' => $data);
-        }
-
-        # Add 'payment' to 'payments' block
-        $root->appendChild($payment);
-
     }
-
-    # Finalise XML Document
-    $xml->setDocumentElement($root);
-    my $xmlstring = $xml->toString();
-
 
     # Create a transaction
     my $dbh   = C4::Context->dbh;
@@ -160,10 +133,7 @@ sub opac_online_payment_begin {
         billingAddress2    => $borrower_result->address2,
         billingPostalCode  => $borrower_result->zipcode,
         billingPostalPlace => $borrower_result->city,
-        email              => $borrower_result->email,
-
-        # XML orders description
-        structuredOrderInformation => $xmlstring 
+        email              => $borrower_result->email
     );
 
     print $cgi->header();
