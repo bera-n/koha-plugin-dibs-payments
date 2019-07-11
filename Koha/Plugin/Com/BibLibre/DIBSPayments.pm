@@ -70,35 +70,6 @@ sub opac_online_payment_begin {
     # Get the borrower
     my $borrower_result = Koha::Patrons->find($borrowernumber);
 
-    # Create a transaction
-    my $dbh   = C4::Context->dbh;
-    my $table = $self->get_qualified_table_name('dibs_transactions');
-    my $sth = $dbh->prepare("INSERT INTO $table (`transaction_id`) VALUES (?)");
-    $sth->execute("NULL");
-
-    my $transaction_id =
-      $dbh->last_insert_id( undef, undef, qw(dibs_transactions transaction_id) );
-
-    # Construct redirect URI
-    my $redirect_url = URI->new( C4::Context->preference('OPACBaseURL')
-          . "/cgi-bin/koha/opac-account-pay-return.pl" );
-    $redirect_url->query_form(
-        {
-            payment_method => scalar $cgi->param('payment_method'),
-            transaction_id => $transaction_id
-        }
-    );
-
-    # Construct callback URI
-    my $callback_url =
-      URI->new( C4::Context->preference('OPACBaseURL')
-          . $self->get_plugin_http_path()
-          . "/callback.pl" );
-
-    # Construct cancel URI
-    my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
-          . "/cgi-bin/koha/opac-account.pl" );
-
     # Construct XML POST
     my $xml = XML::LibXML::Document->new( '1.0', 'utf-8' );
     my $root = $xml->createElement('orderinformation');
@@ -109,6 +80,7 @@ sub opac_online_payment_begin {
       ->search( { accountlines_id => \@accountline_ids } );
     my $now               = DateTime->now;
     my $dateoftransaction = $now->ymd('-') . ' ' . $now->hms(':');
+
 
     my $sum = 0;
 
@@ -141,20 +113,44 @@ sub opac_online_payment_begin {
     $xml->setDocumentElement($root);
     my $xmlstring = $xml->toString();
 
-    $template->param(
+
+    # Create a transaction
+    my $dbh   = C4::Context->dbh;
+    my $table = $self->get_qualified_table_name('dibs_transactions');
+    my $sth = $dbh->prepare("INSERT INTO $table (`transaction_id`, `borrowernumber`, `accountlines_ids`, `amount`) VALUES (?,?,?,?)");
+    $sth->execute("NULL", $borrowernumber, join(" ", $cgi->multi_param('accountline')), $sum);
+
+    my $transaction_id =
+      $dbh->last_insert_id( undef, undef, qw(dibs_transactions transaction_id) );
+
+    # Construct redirect URI
+    my $accepturl = URI->new( C4::Context->preference('OPACBaseURL')
+          . "/cgi-bin/koha/opac-account-pay-return.pl?payment_method=Koha::Plugin::Com::BibLibre::DIBSPayments" );
+
+    # Construct callback URI
+    my $callback_url =
+      URI->new( C4::Context->preference('OPACBaseURL')
+          . $self->get_plugin_http_path()
+          . "/callback.pl" );
+
+    # Construct cancel URI
+    my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
+          . "/cgi-bin/koha/opac-account.pl?payment_method=Koha::Plugin::Com::BibLibre::DIBSPayments" );
+
+
+	$template->param(
 
         DIBSURL => 'https://payment.architrade.com/paymentweb/start.action',
 
         # Required fields
-        accepturl    => $redirect_url,
-        amount       => $sum,
+        accepturl    => $accepturl,
+        #FIXME
+        amount       => $sum * 100,
         callbackurl  => $callback_url,
         #FIXME
         currency     => 'EUR',
         merchant     => $self->retrieve_data('DIBSMerchantID'),
         orderid      => $transaction_id,
-        #FIXME
-        #? => $borrowernumber,
         
         # Optional fields
         lang               => C4::Languages::getlanguage(),
@@ -189,7 +185,7 @@ sub opac_online_payment_end {
         }
     );
 
-    my $transaction_id = $cgi->param('transaction_id');
+    my $transaction_id = $cgi->param('orderid');
 
     # Check payment went through here
     my $table = $self->get_qualified_table_name('dibs_transactions');
@@ -282,6 +278,9 @@ sub install() {
         CREATE TABLE IF NOT EXISTS $table (
             `transaction_id` INT( 11 ) NOT NULL AUTO_INCREMENT,
             `accountline_id` INT( 11 ),
+            `borrowernumber` INT( 11 ),
+            `accountlines_ids` mediumtext,
+            `amount` decimal(28,6),
             `updated` TIMESTAMP,
             PRIMARY KEY (`transaction_id`)
         ) ENGINE = INNODB;

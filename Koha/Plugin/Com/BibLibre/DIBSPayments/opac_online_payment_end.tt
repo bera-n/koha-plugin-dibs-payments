@@ -1,7 +1,7 @@
 [% USE Koha %]
 [% USE KohaDates %]
 
-[% INCLUDE 'doc-head-open.inc' %][% IF ( LibraryNameTitle ) %][% LibraryNameTitle %][% ELSE %]Koha online[% END %] catalog &rsaquo; Pay your fines and charges
+[% INCLUDE 'doc-head-open.inc' %]
 [% INCLUDE 'doc-head-close.inc' %]
 [% BLOCK cssinclude %][% END %]
 </head>
@@ -26,7 +26,7 @@
                 <div id="useraccount" class="maincontent">
                     <div class="alert alert-info">
                         [% IF message == 'valid_payment' %]
-                            <p>Your payment of &#163;[% message_value %] has been processed sucessfully!</p>
+                            <p>Your payment of FIXME: currency [% message_value %] has been processed sucessfully!</p>
                         [% ELSIF message == 'no_amount' %]
                             <p>No amount was passed in!</p>
                             <p>Please contact a librarian for details.</p>
