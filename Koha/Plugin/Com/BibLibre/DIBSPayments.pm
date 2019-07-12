@@ -77,14 +77,22 @@ sub opac_online_payment_begin {
     my $now               = DateTime->now;
     my $dateoftransaction = $now->ymd('-') . ' ' . $now->hms(':');
 
+    my $active_currency = Koha::Acquisition::Currencies->get_active;
+    my $local_currency;
+    if ($active_currency) {
+        $local_currency = $active_currency->isocode;
+        $local_currency = $active_currency->currency unless defined $local_currency;
+    } else {
+        $local_currency = 'EUR';
+    }
+    my $decimals = decimal_precision($local_currency);
 
     my $sum = 0;
     for my $accountline ( $accountlines->all ) {
         # Track sum
-        my $amount = sprintf "%.2f", $accountline->amountoutstanding;
+        my $amount = sprintf "%." . $decimals . "f", $accountline->amountoutstanding;
         $sum = $sum + $amount;
     }
-
 
     # Create a transaction
     my $dbh   = C4::Context->dbh;
@@ -95,17 +103,7 @@ sub opac_online_payment_begin {
     my $transaction_id =
       $dbh->last_insert_id( undef, undef, qw(dibs_transactions transaction_id) );
 
-    my $active_currency = Koha::Acquisition::Currencies->get_active;
-    my $local_currency;
-    if ($active_currency) {
-        $local_currency = $active_currency->isocode;
-        $local_currency = $active_currency->currency unless defined $local_currency;
-    } else {
-        $local_currency = 'EUR';
-    }
-
     # DIBS require "The smallest unit of an amount in the selected currency, following the ISO4217 standard." 
-    my $decimals = decimal_precision($local_currency);
     if ($decimals > 0) {
         $sum = $sum * 10**$decimals;
     }
