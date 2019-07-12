@@ -124,7 +124,7 @@ sub opac_online_payment_begin {
 
 
     # MD5
-    my $md51 = md5_hex($self->retrieve_data('MD5k1') . 'merchant=' . $self->retrieve_data('DIBSMerchantID') . "&orderid=$transaction_id&currency=EUR&amount=$sum");
+    my $md51 = md5_hex($self->retrieve_data('MD5k1') . 'merchant=' . $self->retrieve_data('DIBSMerchantID') . "&orderid=$transaction_id&currency=$local_currency&amount=$sum");
     my $md5checksum = md5_hex($self->retrieve_data('MD5k2') . $md51);
 
     # Test mode?
