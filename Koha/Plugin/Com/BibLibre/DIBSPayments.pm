@@ -85,20 +85,6 @@ sub opac_online_payment_begin {
         $sum = $sum + $amount;
     }
 
-    my $active_currency = Koha::Acquisition::Currencies->get_active;
-    my $local_currency;
-    if ($active_currency) {
-        $local_currency = $active_currency->currency;
-    } else {
-        $local_currency = 'EUR';
-    }
-
-    my $decimals = decimal_precision($local_currency);
-
-    # DIBS require "The smallest unit of an amount in the selected currency, following the ISO4217 standard." 
-    if ($decimals > 0) {
-        $sum = $sum * 10**$decimals;
-    }
 
     # Create a transaction
     my $dbh   = C4::Context->dbh;
@@ -108,6 +94,20 @@ sub opac_online_payment_begin {
 
     my $transaction_id =
       $dbh->last_insert_id( undef, undef, qw(dibs_transactions transaction_id) );
+
+    my $active_currency = Koha::Acquisition::Currencies->get_active;
+    my $local_currency;
+    if ($active_currency) {
+        $local_currency = $active_currency->currency;
+    } else {
+        $local_currency = 'EUR';
+    }
+
+    # DIBS require "The smallest unit of an amount in the selected currency, following the ISO4217 standard." 
+    my $decimals = decimal_precision($local_currency);
+    if ($decimals > 0) {
+        $sum = $sum * 10**$decimals;
+    }
 
     # Construct redirect URI
     my $accepturl = URI->new( C4::Context->preference('OPACBaseURL')
@@ -137,8 +137,7 @@ sub opac_online_payment_begin {
         accepturl    => $accepturl,
         amount       => $sum,
         callbackurl  => $callback_url,
-        #FIXME
-        currency     => 'EUR',
+        currency     => $local_currency,
         merchant     => $self->retrieve_data('DIBSMerchantID'),
         orderid      => $transaction_id,
         
