@@ -98,7 +98,8 @@ sub opac_online_payment_begin {
     my $active_currency = Koha::Acquisition::Currencies->get_active;
     my $local_currency;
     if ($active_currency) {
-        $local_currency = $active_currency->currency;
+        $local_currency = $active_currency->isocode;
+        $local_currency = $active_currency->currency unless defined $local_currency;
     } else {
         $local_currency = 'EUR';
     }
@@ -194,7 +195,8 @@ sub opac_online_payment_end {
     my $active_currency = Koha::Acquisition::Currencies->get_active;
     my $local_currency;
     if ($active_currency) {
-        $local_currency = $active_currency->currency;
+        $local_currency = $active_currency->isocode;
+        $local_currency = $active_currency->currency unless defined $local_currency;
     } else {
         $local_currency = 'EUR';
     }
