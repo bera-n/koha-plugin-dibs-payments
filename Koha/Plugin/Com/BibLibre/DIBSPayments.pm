@@ -10,6 +10,7 @@ use Koha::Account;
 use Koha::Account::Lines;
 use Koha::Patrons;
 
+use Locale::Currency::Format;
 use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
 
@@ -78,17 +79,26 @@ sub opac_online_payment_begin {
 
 
     my $sum = 0;
-
     for my $accountline ( $accountlines->all ) {
-
         # Track sum
         my $amount = sprintf "%.2f", $accountline->amountoutstanding;
         $sum = $sum + $amount;
-
     }
 
-    # FIXME
-    $sum = $sum * 100;
+    my $active_currency = Koha::Acquisition::Currencies->get_active;
+    my $local_currency;
+    if ($active_currency) {
+        $local_currency = $active_currency->currency;
+    } else {
+        $local_currency = 'EUR';
+    }
+
+    my $decimals = decimal_precision($local_currency);
+
+    # DIBS require "The smallest unit of an amount in the selected currency, following the ISO4217 standard." 
+    if ($decimals > 0) {
+        $sum = $sum * 10**$decimals;
+    }
 
     # Create a transaction
     my $dbh   = C4::Context->dbh;
@@ -179,10 +189,19 @@ sub opac_online_payment_end {
     my $transaction_amount = sprintf "%.2f", $transaction_value;
     $transaction_amount =~ s/^-//g;
 
+    my $active_currency = Koha::Acquisition::Currencies->get_active;
+    my $local_currency;
+    if ($active_currency) {
+        $local_currency = $active_currency->currency;
+    } else {
+        $local_currency = 'EUR';
+    }
+
     if ( defined($transaction_value) ) {
         $template->param(
             borrower      => scalar Koha::Patrons->find($borrowernumber),
             message       => 'valid_payment',
+            currency      => $local_currency,
             message_value => $transaction_amount
         );
     }
