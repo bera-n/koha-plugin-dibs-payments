@@ -54,8 +54,6 @@ if ($statuscode and $statuscode == 2) {
             note       => 'DIBS Payment',                                                                 
             library_id => $borrower->branchcode,                                                         
             lines => $lines,    # Arrayref of Koha::Account::Line objects to pay                         
-                                #account_type => $type,  # accounttype code                              
-                 #offset_type  => $offset_type,    # offset type code                                    
         }
     ); 
 
@@ -92,12 +90,4 @@ if ($statuscode and $statuscode == 2) {
             }
         }
 	}
-
-
-} else {
-    warn "notok: $statuscode";
-    print "<html><body>notok</body></html>";
 }
-
-
-

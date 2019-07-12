@@ -30,9 +30,6 @@
                         [% ELSIF message == 'no_amount' %]
                             <p>No amount was passed in!</p>
                             <p>Please contact a librarian for details.</p>
-                        [% ELSIF message == 'no_accountlines' %]
-                            <p>No fee ids were passed in!</p>
-                            <p>Please contact a librarian for details.</p>
                         [% ELSE %]
                             <p>Unkown error.</p>
                             <p>Please contact a librarian for details.</p>
