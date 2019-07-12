@@ -128,6 +128,8 @@ sub opac_online_payment_begin {
     my $md51 = md5_hex($self->retrieve_data('MD5k1') . 'merchant=' . $self->retrieve_data('DIBSMerchantID') . "&orderid=$transaction_id&currency=EUR&amount=$sum");
     my $md5checksum = md5_hex($self->retrieve_data('MD5k2') . $md51);
 
+    # Test mode?
+    my $test = $self->retrieve_data('testMode');
 
 	$template->param(
 
@@ -150,7 +152,8 @@ sub opac_online_payment_begin {
         billingPostalCode  => $borrower_result->zipcode,
         billingPostalPlace => $borrower_result->city,
         email              => $borrower_result->email,
-        md5key             => $md5checksum
+        md5key             => $md5checksum,
+        test               => $test
     );
 
     print $cgi->header();
@@ -244,7 +247,8 @@ sub configure {
             enable_opac_payments => $self->retrieve_data('enable_opac_payments'),
             DIBSMerchantID       => $self->retrieve_data('DIBSMerchantID'),
             MD5k1                => $self->retrieve_data('MD5k1'),
-            MD5k2                => $self->retrieve_data('MD5k2')
+            MD5k2                => $self->retrieve_data('MD5k2'),
+            testMode             => $self->retrieve_data('testMode')
         );
 
         print $cgi->header();
@@ -257,7 +261,7 @@ sub configure {
                 DIBSMerchantID       => $cgi->param('DIBSMerchantID'),
                 MD5k1                => $cgi->param('MD5k1'),
                 MD5k2                => $cgi->param('MD5k2'),
-                last_configured_by   => C4::Context->userenv->{'number'},
+                testMode             => $cgi->param('testMode')
             }
         );
         $self->go_home();

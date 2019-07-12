@@ -30,7 +30,9 @@
                     </p>
                 
                     <form id="dibsform" method="post" action="[% DIBSURL %]">
+                        [% IF test %]
                         <input id="test" name="test" type="hidden" value="1"/>
+                        [% END %]
                         <input id="accepturl" name="accepturl" type="hidden" value="[% accepturl %]"/>
                         <input id="amount" name="amount" type="hidden" value="[% amount %]"/>
                         <input id="callbackurl" name="callbackurl" type="hidden" value="[% callbackurl %]"/>

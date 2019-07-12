@@ -41,14 +41,23 @@
 
         <p>
 
-        <label for="">MD5 k1: </label>
+        <label for="MD5k1">MD5 k1: </label>
         <input type="text" name="MD5k1" value="[% MD5k1 %]" />
 
         <p>
 
-        <label for="">MD5 k2: </label>
+        <label for="MD5k2">MD5 k2: </label>
         <input type="text" name="MD5k2" value="[% MD5k2 %]" />
 
+        <p>
+
+        <label for="testMode">Test mode: </label>
+        <select name="testMode">
+            <option value="0">Disabled</option>
+            <option value="1" [% IF testMode %] selected="selected" [% END %]>Enabled</option>
+        </select>
+
+        <p>
 
         <input type="hidden" name="save" value="1" />
 
