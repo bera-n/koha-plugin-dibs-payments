@@ -38,6 +38,7 @@ You will need to add to the apache config for your site:
 * Create MD5 keys in `Integration` => `MD5 Keys`
 
 # Plugin configuration
+* Make sure that Koha's OPACBaseURL system preference is correctly set
 * Report your DIBS Merchant ID and MD5 Keys in the plugin configuration page
 
 
