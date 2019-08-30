@@ -155,8 +155,7 @@ sub opac_online_payment_begin {
         test               => $test
     );
 
-    print $cgi->header();
-    print $template->output();
+    $self->output_html( $template->output() );
 }
 
 ## Complete the payment process
@@ -214,8 +213,7 @@ sub opac_online_payment_end {
         );
     }
 
-    print $cgi->header();
-    print $template->output();
+    $self->output_html( $template->output() );
 }
 
 ## If your plugin needs to add some javascript in the OPAC, you'll want
@@ -251,8 +249,7 @@ sub configure {
             testMode             => $self->retrieve_data('testMode')
         );
 
-        print $cgi->header();
-        print $template->output();
+        $self->output_html( $template->output() );
     }
     else {
         $self->store_data(
