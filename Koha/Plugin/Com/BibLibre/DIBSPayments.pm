@@ -15,16 +15,16 @@ use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
 
 ## Here we set our plugin version
-our $VERSION = "00.00.01";
+our $VERSION = "00.00.02";
 
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
     name            => 'DIBS Payments Plugin',
     author          => 'Matthias Meusburger',
     date_authored   => '2019-07-01',
-    date_updated    => "2019-07-01",
+    date_updated    => "2020-07-27",
     minimum_version => '17.11.00.000',
-    maximum_version => undef,
+    maximum_version => '',
     version         => $VERSION,
     description     => 'This plugin implements online payments using '
       . 'DIBS payments platform. https://tech.dibspayment.com/D2',
@@ -43,6 +43,19 @@ sub new {
     my $self = $class->SUPER::new($args);
 
     return $self;
+}
+
+sub _version_check {
+    my ( $self, $minversion ) = @_;
+
+    $minversion =~ s/(.*\..*)\.(.*)\.(.*)/$1$2$3/;
+
+    my $kohaversion = Koha::version();
+
+    # remove the 3 last . to have a Perl number
+    $kohaversion =~ s/(.*\..*)\.(.*)\.(.*)/$1$2$3/;
+
+    return ( $kohaversion > $minversion );
 }
 
 sub opac_online_payment {

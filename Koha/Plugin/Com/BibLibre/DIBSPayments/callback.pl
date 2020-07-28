@@ -24,6 +24,7 @@ use C4::Circulation;
 use C4::Auth;
 use Koha::Account;
 use Koha::Account::Lines;
+use Koha::Account::Line;
 use Koha::Patrons;
 use Koha::Plugin::Com::BibLibre::DIBSPayments;
 
@@ -33,6 +34,7 @@ use Digest::MD5 qw(md5_hex);
 my $paymentHandler = Koha::Plugin::Com::BibLibre::DIBSPayments->new;
 my $input = new CGI;
 my $statuscode = $input->param('statuscode');
+
 if ($statuscode and $statuscode == 2) {
     my $totalamount = $input->param('totalamount');
     my $transaction_id = $input->param('orderid');
@@ -63,32 +65,64 @@ if ($statuscode and $statuscode == 2) {
         "UPDATE $table SET accountline_id = ? WHERE transaction_id = ?");
     $sth->execute( $accountline_id, $transaction_id );
     
-    # Renew any items as required
+	# Renew any items as required
     for my $line ( @{$lines} ) {
-        my $item = Koha::Items->find( { itemnumber => $line->itemnumber } );
+        my $item =
+          Koha::Items->find( { itemnumber => $line->itemnumber } );
 
         # Renew if required
-        if ( defined( $line->accounttype )
-            && $line->accounttype eq "FU" )
-        {
+        if ( $paymentHandler->_version_check('19.11.00') ) {
+            if (   $line->debit_type_code eq "OVERDUE"
+            && $line->status ne "UNRETURNED" )
+            {
             if (
                 C4::Circulation::CheckIfIssuedToPatron(
-                    $line->borrowernumber, $item->biblionumber
+                $line->borrowernumber, $item->biblionumber
                 )
               )
             {
-                my ( $can, $error ) =
-                  C4::Circulation::CanBookBeRenewed( $line->borrowernumber,
-                    $line->itemnumber, 0 );
-                if ($can) { 
-                    my $datedue =
-                      C4::Circulation::AddRenewal( $line->borrowernumber,
-                        $line->itemnumber );
+                my ( $renew_ok, $error ) =
+                  C4::Circulation::CanBookBeRenewed(
+                $line->borrowernumber, $line->itemnumber, 0 );
+                if ($renew_ok) {
+                C4::Circulation::AddRenewal(
+                    $line->borrowernumber, $line->itemnumber );
+                }
+            }
+            }
+        }
+        else {
+            if ( defined( $line->accounttype )
+            && $line->accounttype eq "FU" )
+            {
+                if (
+                    C4::Circulation::CheckIfIssuedToPatron(
+                    $line->borrowernumber, $item->biblionumber
+                    )
+                  )
+                {
+                    my ( $can, $error ) =
+                      C4::Circulation::CanBookBeRenewed(
+                    $line->borrowernumber, $line->itemnumber, 0 );
+                    if ($can) {
+
+                    # Fix paid for fine before renewal to prevent
+                    # call to _CalculateAndUpdateFine if
+                    # CalculateFinesOnReturn is set.
                     C4::Circulation::_FixOverduesOnReturn(
                         $line->borrowernumber, $line->itemnumber );
+
+                    # Renew the item
+                    my $datedue =
+                      C4::Circulation::AddRenewal(
+                        $line->borrowernumber, $line->itemnumber );
+                    }
                 }
             }
         }
-	}
+    }
+
+
+
     print $input->header( -status => '200 OK');
 }
