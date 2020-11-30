@@ -59,6 +59,10 @@ if ($statuscode and $statuscode == 2) {
         }
     ); 
 
+    if (ref $accountline_id eq 'HASH') {
+        $accountline_id = $accountline_id->{payment_id};
+    }
+
     # Link payment to dibs_transactions
     my $dbh   = C4::Context->dbh;
     my $sth   = $dbh->prepare(
